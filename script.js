@@ -1,22 +1,14 @@
 const counter = document.getElementById("counter");
+const hint = document.getElementById("hint");
+const progressBar = document.getElementById("progressBar");
 const spiral = document.getElementById("spiral");
 const app = document.getElementById("app");
 
-
-// ============================================================
-// FIXED CHECKPOINTS
-// ============================================================
-
-const CHECKPOINTS = [
-  32999,
-  30999,
-  29999,
-  27999
-];
+// These are the ONLY numbers where the counter can stop.
+const CHECKPOINTS = [32999, 30999, 29999, 27999];
 
 let checkpointIndex = 0;
 let currentValue = CHECKPOINTS[0];
-
 let isAnimating = false;
 let finished = false;
 
@@ -26,456 +18,312 @@ let finished = false;
 // ============================================================
 
 function buildSpiral() {
-
   const count = 150;
   const turns = 7.5;
-
   const minRadius = 8;
   const maxRadius = 68;
 
   for (let i = 0; i < count; i++) {
+    const t = i / (count - 1);
+    const angle = t * Math.PI * 2 * turns;
+    const radius = minRadius + (maxRadius - minRadius) * t;
 
-    const progress = i / (count - 1);
+    const n = CHECKPOINTS[0] - i * 137;
 
-    const angle =
-      progress *
-      Math.PI *
-      2 *
-      turns;
+    const el = document.createElement("span");
+    el.className = "spiral-number";
+    el.textContent = String(Math.max(10000, n));
 
-    const radius =
-      minRadius +
-      (maxRadius - minRadius) *
-      progress;
-
-    const number =
-      CHECKPOINTS[0] -
-      i * 137;
-
-    const element =
-      document.createElement("span");
-
-    element.className =
-      "spiral-number";
-
-    element.textContent =
-      String(Math.max(10000, number));
-
-    element.style.setProperty(
-      "--radius",
-      `${radius}vw`
-    );
-
-    element.style.setProperty(
+    el.style.setProperty("--radius", `${radius}vw`);
+    el.style.setProperty(
       "--rotation",
       `${angle * 180 / Math.PI}deg`
     );
-
-    element.style.setProperty(
+    el.style.setProperty(
       "--opacity",
-      `${0.08 + (1 - progress) * 0.28}`
+      `${0.08 + (1 - t) * 0.28}`
     );
 
-    spiral.appendChild(element);
+    spiral.appendChild(el);
   }
 }
 
 
 // ============================================================
-// CREATE STATIC NUMBER
+// PROGRESS
 // ============================================================
 
-function showNumber(number) {
+function updateProgress() {
+  const pct =
+    (checkpointIndex / (CHECKPOINTS.length - 1)) * 100;
 
-  counter.innerHTML = "";
-
-  const digits =
-    String(number)
-      .padStart(5, "0")
-      .split("");
-
-  digits.forEach(digit => {
-
-    const wrapper =
-      document.createElement("span");
-
-    wrapper.className =
-      "digit-wrapper";
-
-
-    const track =
-      document.createElement("span");
-
-    track.className =
-      "digit-track";
-
-
-    const digitElement =
-      document.createElement("span");
-
-    digitElement.textContent =
-      digit;
-
-
-    track.appendChild(
-      digitElement
-    );
-
-    wrapper.appendChild(
-      track
-    );
-
-    counter.appendChild(
-      wrapper
-    );
-  });
+  progressBar.style.width = `${pct}%`;
 }
 
 
 // ============================================================
-// CREATE A REAL NUMBER WHEEL
+// DIGIT ROLLER
 // ============================================================
 
-function createWheel(startDigit, endDigit, index) {
+function createDigit(digit) {
+  const wrapper = document.createElement("span");
 
-  const wrapper =
-    document.createElement("span");
+  wrapper.className = "digit-wrapper";
 
-  wrapper.className =
-    "digit-wrapper";
+  const track = document.createElement("span");
 
+  track.className = "digit-track";
 
-  const track =
-    document.createElement("span");
+  // Three copies allow us to create a convincing rolling effect.
+  track.innerHTML = `
+    <span>${digit}</span>
+    <span>${digit}</span>
+    <span>${digit}</span>
+  `;
 
-  track.className =
-    "digit-track";
-
-
-  /*
-    We deliberately create MANY complete rotations.
-
-    Every digit therefore physically travels through:
-
-    9
-    8
-    7
-    6
-    ...
-    0
-    9
-    8
-    ...
-
-    before eventually landing on its target.
-  */
-
-  const fullRotations =
-    3 + index * 0.35;
-
-
-  const rotationSteps =
-    Math.ceil(
-      fullRotations * 10
-    );
-
-
-  /*
-    Calculate where the target occurs
-    after all those rotations.
-  */
-
-  let targetOffset =
-    startDigit - endDigit;
-
-  if (targetOffset < 0) {
-    targetOffset += 10;
-  }
-
-
-  const totalSteps =
-    rotationSteps +
-    targetOffset;
-
-
-  /*
-    Build the complete wheel.
-  */
-
-  for (
-    let step = 0;
-    step <= totalSteps;
-    step++
-  ) {
-
-    const value =
-      (startDigit - step + 100) %
-      10;
-
-    const element =
-      document.createElement("span");
-
-    element.textContent =
-      value;
-
-    track.appendChild(
-      element
-    );
-  }
-
-
-  wrapper.appendChild(
-    track
-  );
-
-  counter.appendChild(
-    wrapper
-  );
-
+  wrapper.appendChild(track);
 
   return {
-    track,
-    totalSteps,
-    index
+    wrapper,
+    track
   };
 }
 
 
+function setupCounter() {
+  counter.innerHTML = "";
+
+  const digits = String(currentValue)
+    .padStart(5, "0")
+    .split("");
+
+  digits.forEach(digit => {
+    const result = createDigit(digit);
+    counter.appendChild(result.wrapper);
+  });
+}
+
+
 // ============================================================
-// ROLL THE ENTIRE FIVE-DIGIT NUMBER
+// MECHANICAL DIGIT ANIMATION
 // ============================================================
 
-function rollNumber(from, to) {
+function animateDigits(from, to, duration = 2200) {
 
-  if (isAnimating || finished) {
-    return;
-  }
+  const fromDigits = String(from)
+    .padStart(5, "0")
+    .split("")
+    .map(Number);
 
-  isAnimating = true;
-
-
-  const fromDigits =
-    String(from)
-      .padStart(5, "0")
-      .split("")
-      .map(Number);
-
-
-  const toDigits =
-    String(to)
-      .padStart(5, "0")
-      .split("")
-      .map(Number);
-
-
-  /*
-    Clear the existing number.
-  */
+  const toDigits = String(to)
+    .padStart(5, "0")
+    .split("")
+    .map(Number);
 
   counter.innerHTML = "";
 
-
-  const wheels = [];
-
-
-  /*
-    Create FIVE independent mechanical wheels.
-
-    This is the important part:
-    every single digit gets its own wheel,
-    including digits that don't change.
-  */
+  const digitTracks = [];
 
   for (let i = 0; i < 5; i++) {
 
-    const wheel =
-      createWheel(
-        fromDigits[i],
-        toDigits[i],
-        i
-      );
+    const wrapper = document.createElement("span");
+    wrapper.className = "digit-wrapper";
 
-    wheels.push(wheel);
+    const track = document.createElement("span");
+    track.className = "digit-track";
+
+    /*
+      Each track contains a vertical sequence of numbers.
+
+      We use enough numbers for the digit to roll forward
+      naturally. The animation ultimately stops exactly
+      on the desired target digit.
+    */
+
+    let sequence = [];
+
+    const startDigit = fromDigits[i];
+    const endDigit = toDigits[i];
+
+    let distance = endDigit - startDigit;
+
+    /*
+      Since this is a countdown, wrap downward through 0
+      whenever necessary.
+    */
+
+    if (distance > 0) {
+      distance -= 10;
+    }
+
+    /*
+      Create a sequence long enough for the animation.
+    */
+
+    for (let j = 0; j <= Math.abs(distance) + 2; j++) {
+      const value =
+        (startDigit - j + 10) % 10;
+
+      sequence.push(value);
+    }
+
+    /*
+      Add the target digit explicitly at the end.
+    */
+
+    sequence.push(endDigit);
+
+    sequence.forEach(number => {
+      const digitElement = document.createElement("span");
+
+      digitElement.textContent = number;
+
+      track.appendChild(digitElement);
+    });
+
+    wrapper.appendChild(track);
+    counter.appendChild(wrapper);
+
+    digitTracks.push({
+      track,
+      startDigit,
+      endDigit,
+      distance
+    });
   }
 
 
   /*
-    Force the browser to render the
-    starting position first.
+    Force the browser to recognise the initial position
+    before starting the animation.
   */
 
-  wheels.forEach(wheel => {
-
-    wheel.track.style.transform =
-      "translateY(0px)";
-
+  digitTracks.forEach(item => {
+    item.track.style.transform = "translateY(0)";
   });
-
 
   requestAnimationFrame(() => {
 
-    requestAnimationFrame(() => {
+    /*
+      Each digit gets a slightly different timing.
 
-      /*
-        Get the actual height of ONE digit.
-      */
+      This makes the number feel mechanical instead of
+      looking like one flat block changing at once.
+    */
+
+    digitTracks.forEach((item, index) => {
 
       const digitHeight =
-        counter
-          .querySelector(
-            ".digit-track span"
-          )
-          .getBoundingClientRect()
-          .height;
+        counter.offsetHeight;
 
+      const steps =
+        Math.abs(item.distance) + 1;
 
-      /*
-        Roll every wheel.
+      const finalPosition =
+        -(steps * digitHeight);
 
-        The stagger makes it feel like a
-        physical machine rather than a flat
-        text animation.
-      */
+      const delay =
+        index * 45;
 
-      wheels.forEach((wheel, index) => {
+      item.track.style.transition =
+        `transform ${duration}ms cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`;
 
-        const distance =
-          wheel.totalSteps *
-          digitHeight;
-
-
-        /*
-          Higher digits start slightly earlier.
-          Lower digits follow.
-        */
-
-        const delay =
-          index * 70;
-
-
-        /*
-          Slightly different durations create
-          the mechanical cascading effect.
-        */
-
-        const duration =
-          2400 +
-          index * 120;
-
-
-        wheel.track.style.transition =
-          [
-            "transform",
-            `${duration}ms`,
-            "cubic-bezier(0.12, 0.75, 0.2, 1)",
-            `${delay}ms`
-          ].join(" ");
-
-
-        wheel.track.style.transform =
-          `translateY(-${distance}px)`;
-
-      });
-
+      item.track.style.transform =
+        `translateY(${finalPosition}px)`;
     });
 
   });
 
 
   /*
-    Wait for the slowest wheel.
+    Wait until the animation is finished.
   */
 
-  const totalAnimationTime =
-    2400 +
-    (4 * 120) +
-    (4 * 70) +
-    150;
-
+  const totalDuration =
+    duration + 5 * 45;
 
   setTimeout(() => {
 
-    currentValue =
-      to;
-
+    currentValue = to;
 
     /*
-      Replace all the wheels with the
-      clean final number.
+      Replace the animated tracks with clean,
+      static digits so the browser isn't carrying
+      a huge DOM structure after every click.
     */
 
-    showNumber(
-      currentValue
-    );
+    setupCounter();
 
-
-    isAnimating =
-      false;
-
-
-    /*
-      27999 is the final state.
-
-      Nothing else happens until refresh.
-    */
+    isAnimating = false;
 
     if (
       checkpointIndex ===
       CHECKPOINTS.length - 1
     ) {
 
-      finished =
-        true;
+      finished = true;
 
-      app.classList.add(
-        "complete"
-      );
+      app.classList.add("complete");
+
+      /*
+        IMPORTANT:
+        We deliberately do NOT change the hint text here.
+
+        This means there is no "Final number reached"
+        message at the end.
+
+        The page simply freezes.
+      */
+
+      hint.textContent = "";
     }
 
-  }, totalAnimationTime);
+  }, totalDuration);
 }
 
 
 // ============================================================
-// CLICK ANYWHERE
+// CLICK HANDLER
 // ============================================================
 
-document.addEventListener(
-  "click",
-  () => {
+function handleClick() {
 
-    if (
-      isAnimating ||
-      finished
-    ) {
-      return;
-    }
+  /*
+    Ignore clicks while the number is rolling.
+  */
 
-
-    checkpointIndex++;
-
-
-    const nextValue =
-      CHECKPOINTS[
-        checkpointIndex
-      ];
-
-
-    rollNumber(
-      currentValue,
-      nextValue
-    );
-
+  if (isAnimating || finished) {
+    return;
   }
-);
+
+  checkpointIndex++;
+
+  const nextTarget =
+    CHECKPOINTS[checkpointIndex];
+
+  isAnimating = true;
+
+  animateDigits(
+    currentValue,
+    nextTarget,
+    2300
+  );
+
+  updateProgress();
+}
 
 
 // ============================================================
 // INITIALISE
 // ============================================================
 
+document.addEventListener(
+  "click",
+  handleClick
+);
+
 buildSpiral();
 
-showNumber(
-  currentValue
-);
+setupCounter();
+
+updateProgress();
