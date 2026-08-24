@@ -21,6 +21,7 @@ function buildSpiral() {
   const maxRadius = 68;
 
   for (let i = 0; i < count; i++) {
+
     const t = i / (count - 1);
     const angle = t * Math.PI * 2 * turns;
     const radius = minRadius + (maxRadius - minRadius) * t;
@@ -37,6 +38,7 @@ function buildSpiral() {
       "--rotation",
       `${angle * 180 / Math.PI}deg`
     );
+
     el.style.setProperty(
       "--opacity",
       `${0.08 + (1 - t) * 0.28}`
@@ -48,10 +50,11 @@ function buildSpiral() {
 
 
 // ============================================================
-// INITIAL CENTRAL NUMBER
+// CENTRAL NUMBER
 // ============================================================
 
 function setupCounter(value) {
+
   counter.innerHTML = "";
 
   const digits = String(value)
@@ -59,6 +62,7 @@ function setupCounter(value) {
     .split("");
 
   digits.forEach(digit => {
+
     const wrapper = document.createElement("span");
     wrapper.className = "digit-wrapper";
 
@@ -70,13 +74,14 @@ function setupCounter(value) {
 
     track.appendChild(digitElement);
     wrapper.appendChild(track);
+
     counter.appendChild(wrapper);
   });
 }
 
 
 // ============================================================
-// MECHANICAL DIGIT ROLL
+// MECHANICAL ROLLING ANIMATION
 // ============================================================
 
 function animateDigits(from, to) {
@@ -110,20 +115,11 @@ function animateDigits(from, to) {
     const startDigit = fromDigits[i];
     const endDigit = toDigits[i];
 
-    /*
-      Calculate how many places this digit needs
-      to roll downward.
-    */
-
     let distance = startDigit - endDigit;
 
     if (distance < 0) {
       distance += 10;
     }
-
-    /*
-      Build the rolling sequence.
-    */
 
     const sequence = [];
 
@@ -142,7 +138,6 @@ function animateDigits(from, to) {
       digit.textContent = value;
 
       track.appendChild(digit);
-
     });
 
     wrapper.appendChild(track);
@@ -155,24 +150,16 @@ function animateDigits(from, to) {
   }
 
 
-  /*
-    Wait one frame so the browser registers
-    the starting position before animating.
-  */
-
+  // Start the animation on the next frame.
   requestAnimationFrame(() => {
 
-    const digitHeight = counter.offsetHeight;
+    const digitHeight =
+      counter.getBoundingClientRect().height;
 
     tracks.forEach((item, index) => {
 
       const finalPosition =
         -(item.distance * digitHeight);
-
-      /*
-        Slight delay between digits makes the
-        number feel more mechanical.
-      */
 
       const delay = index * 60;
 
@@ -181,16 +168,12 @@ function animateDigits(from, to) {
 
       item.track.style.transform =
         `translateY(${finalPosition}px)`;
-
     });
 
   });
 
 
-  /*
-    Wait for the full animation to finish.
-  */
-
+  // Clean up after animation.
   setTimeout(() => {
 
     currentValue = to;
@@ -200,10 +183,7 @@ function animateDigits(from, to) {
     isAnimating = false;
 
 
-    /*
-      At 27999, permanently freeze until refresh.
-    */
-
+    // 27999 = completely frozen.
     if (
       checkpointIndex ===
       CHECKPOINTS.length - 1
@@ -214,7 +194,7 @@ function animateDigits(from, to) {
       app.classList.add("complete");
     }
 
-  }, 2600);
+  }, 2700);
 }
 
 
@@ -242,7 +222,7 @@ document.addEventListener("click", () => {
 
 
 // ============================================================
-// START EXPERIENCE
+// START
 // ============================================================
 
 buildSpiral();
