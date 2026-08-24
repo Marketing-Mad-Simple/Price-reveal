@@ -34,6 +34,7 @@ function buildSpiral() {
     el.textContent = String(Math.max(10000, number));
 
     el.style.setProperty("--radius", `${radius}vw`);
+
     el.style.setProperty(
       "--rotation",
       `${angle * 180 / Math.PI}deg`
@@ -50,7 +51,7 @@ function buildSpiral() {
 
 
 // ============================================================
-// CENTRAL NUMBER
+// STATIC COUNTER
 // ============================================================
 
 function setupCounter(value) {
@@ -64,15 +65,20 @@ function setupCounter(value) {
   digits.forEach(digit => {
 
     const wrapper = document.createElement("span");
+
     wrapper.className = "digit-wrapper";
 
     const track = document.createElement("span");
+
     track.className = "digit-track";
 
-    const digitElement = document.createElement("span");
+    const digitElement =
+      document.createElement("span");
+
     digitElement.textContent = digit;
 
     track.appendChild(digitElement);
+
     wrapper.appendChild(track);
 
     counter.appendChild(wrapper);
@@ -81,7 +87,7 @@ function setupCounter(value) {
 
 
 // ============================================================
-// MECHANICAL ROLLING ANIMATION
+// FULL MECHANICAL NUMBER ROLL
 // ============================================================
 
 function animateDigits(from, to) {
@@ -90,90 +96,178 @@ function animateDigits(from, to) {
 
   isAnimating = true;
 
-  const fromDigits = String(from)
-    .padStart(5, "0")
-    .split("")
-    .map(Number);
+  const fromDigits =
+    String(from)
+      .padStart(5, "0")
+      .split("")
+      .map(Number);
 
-  const toDigits = String(to)
-    .padStart(5, "0")
-    .split("")
-    .map(Number);
+  const toDigits =
+    String(to)
+      .padStart(5, "0")
+      .split("")
+      .map(Number);
 
   counter.innerHTML = "";
 
   const tracks = [];
 
+  /*
+    IMPORTANT:
+
+    Every digit gets a complete rolling sequence.
+
+    Even if a digit starts and ends on the SAME number,
+    it still makes several rotations before settling.
+
+    This creates the full mechanical-counter effect.
+  */
+
   for (let i = 0; i < 5; i++) {
 
-    const wrapper = document.createElement("span");
-    wrapper.className = "digit-wrapper";
+    const wrapper =
+      document.createElement("span");
 
-    const track = document.createElement("span");
-    track.className = "digit-track";
+    wrapper.className =
+      "digit-wrapper";
 
-    const startDigit = fromDigits[i];
-    const endDigit = toDigits[i];
 
-    let distance = startDigit - endDigit;
+    const track =
+      document.createElement("span");
 
-    if (distance < 0) {
-      distance += 10;
+    track.className =
+      "digit-track";
+
+
+    const startDigit =
+      fromDigits[i];
+
+    const endDigit =
+      toDigits[i];
+
+
+    /*
+      Base movement required to reach the target.
+    */
+
+    let targetDistance =
+      startDigit - endDigit;
+
+    if (targetDistance < 0) {
+      targetDistance += 10;
     }
 
-    const sequence = [];
 
-    for (let j = 0; j <= distance; j++) {
+    /*
+      Add COMPLETE extra rotations.
+
+      This is what makes ALL five digits roll.
+
+      Higher-place digits get slightly more movement,
+      giving the number a much more dramatic mechanical feel.
+    */
+
+    const extraRotations =
+      2 + (4 - i);
+
+
+    const totalDistance =
+      targetDistance +
+      extraRotations * 10;
+
+
+    /*
+      Build the digit wheel sequence.
+    */
+
+    for (
+      let step = 0;
+      step <= totalDistance;
+      step++
+    ) {
 
       const value =
-        (startDigit - j + 10) % 10;
+        (startDigit - step + 100) % 10;
 
-      sequence.push(value);
-    }
-
-    sequence.forEach(value => {
-
-      const digit = document.createElement("span");
+      const digit =
+        document.createElement("span");
 
       digit.textContent = value;
 
       track.appendChild(digit);
-    });
+    }
+
 
     wrapper.appendChild(track);
+
     counter.appendChild(wrapper);
+
 
     tracks.push({
       track,
-      distance
+      totalDistance
     });
   }
 
 
-  // Start the animation on the next frame.
+  /*
+    Start animation after the browser has
+    rendered the initial positions.
+  */
+
   requestAnimationFrame(() => {
 
     const digitHeight =
       counter.getBoundingClientRect().height;
 
+
     tracks.forEach((item, index) => {
 
       const finalPosition =
-        -(item.distance * digitHeight);
+        -(item.totalDistance * digitHeight);
 
-      const delay = index * 60;
+
+      /*
+        Every digit starts together but with a tiny
+        stagger, creating a cascading mechanical effect.
+      */
+
+      const delay =
+        index * 45;
+
+
+      /*
+        The outer digits move slightly slower,
+        making the entire number feel alive.
+      */
+
+      const duration =
+        2300 + index * 100;
+
 
       item.track.style.transition =
-        `transform 2200ms cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`;
+        `transform ${duration}ms cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`;
+
 
       item.track.style.transform =
         `translateY(${finalPosition}px)`;
+
     });
 
   });
 
 
-  // Clean up after animation.
+  /*
+    Allow enough time for the slowest digit.
+  */
+
+  const animationTime =
+    2300 +
+    4 * 100 +
+    4 * 45 +
+    100;
+
+
   setTimeout(() => {
 
     currentValue = to;
@@ -183,7 +277,11 @@ function animateDigits(from, to) {
     isAnimating = false;
 
 
-    // 27999 = completely frozen.
+    /*
+      Once 27999 is reached, freeze permanently
+      until the page is refreshed.
+    */
+
     if (
       checkpointIndex ===
       CHECKPOINTS.length - 1
@@ -194,7 +292,7 @@ function animateDigits(from, to) {
       app.classList.add("complete");
     }
 
-  }, 2700);
+  }, animationTime);
 }
 
 
@@ -208,10 +306,13 @@ document.addEventListener("click", () => {
     return;
   }
 
+
   checkpointIndex++;
+
 
   const nextValue =
     CHECKPOINTS[checkpointIndex];
+
 
   animateDigits(
     currentValue,
@@ -222,7 +323,7 @@ document.addEventListener("click", () => {
 
 
 // ============================================================
-// START
+// INITIALISE
 // ============================================================
 
 buildSpiral();
