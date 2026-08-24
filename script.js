@@ -2,7 +2,7 @@ const counter = document.getElementById("counter");
 const spiral = document.getElementById("spiral");
 const app = document.getElementById("app");
 
-const CHECKPOINTS = [32999, 30999, 29999, 27999];
+const CHECKPOINTS = [34999, 32999, 30999, 29999, 27999];
 
 let checkpointIndex = 0;
 let currentValue = CHECKPOINTS[0];
