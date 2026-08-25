@@ -93,6 +93,178 @@ function rollTo(target) {
 
   isAnimating = true;
 
+  const start = currentValue;
+  const difference = start - target;
+
+  /*
+    SLOWER, MORE CINEMATIC ROLL
+
+    The old animation was quite quick.
+    This gives each transition roughly 4 seconds,
+    while still adapting slightly to the distance.
+  */
+
+  const duration =
+    Math.min(
+      4500,
+      Math.max(
+        3000,
+        difference * 1.5
+      )
+    );
+
+  const startTime = performance.now();
+
+
+  /*
+    Stronger easing creates a sense of momentum:
+    
+    - starts slowly
+    - accelerates
+    - rolls through the numbers
+    - gradually settles
+  */
+
+  function easeInOutCubic(t) {
+
+    return t < 0.5
+      ? 4 * t * t * t
+      : 1 -
+        Math.pow(
+          -2 * t + 2,
+          3
+        ) / 2;
+  }
+
+
+  function animate(now) {
+
+    const elapsed =
+      now - startTime;
+
+    const progress =
+      Math.min(
+        elapsed / duration,
+        1
+      );
+
+    const eased =
+      easeInOutCubic(progress);
+
+
+    /*
+      Calculate the current number.
+    */
+
+    const value =
+      Math.round(
+        start -
+        difference * eased
+      );
+
+
+    render(value);
+
+
+    /*
+      ROTATION EFFECT
+
+      The entire number subtly rotates and moves vertically
+      while the counter is rolling.
+
+      The rotation peaks around the middle of the animation
+      and naturally returns to zero at the end.
+    */
+
+    const rotation =
+      Math.sin(
+        progress * Math.PI
+      ) * 3.5;
+
+
+    const verticalMovement =
+      Math.sin(
+        progress * Math.PI
+      ) * -12;
+
+
+    const scale =
+      1 +
+      Math.sin(
+        progress * Math.PI
+      ) * 0.035;
+
+
+    counter.style.transform =
+      `
+        translateY(${verticalMovement}px)
+        rotate(${rotation}deg)
+        scale(${scale})
+      `;
+
+
+    if (progress < 1) {
+
+      requestAnimationFrame(
+        animate
+      );
+
+    } else {
+
+      /*
+        Always finish on the EXACT checkpoint.
+      */
+
+      currentValue =
+        target;
+
+      render(
+        target
+      );
+
+
+      /*
+        Return the number to its normal position.
+      */
+
+      counter.style.transform =
+        "translateY(0) rotate(0deg) scale(1)";
+
+
+      isAnimating =
+        false;
+
+
+      /*
+        Freeze permanently at 27999.
+      */
+
+      if (
+        checkpointIndex ===
+        CHECKPOINTS.length - 1
+      ) {
+
+        finished =
+          true;
+
+        app.classList.add(
+          "complete"
+        );
+      }
+    }
+  }
+
+
+  requestAnimationFrame(
+    animate
+  );
+}
+  if (isAnimating || finished) {
+    return;
+  }
+
+  isAnimating = true;
+
   const start =
     currentValue;
 
