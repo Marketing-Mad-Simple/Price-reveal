@@ -7,6 +7,8 @@ body {
   width: 100%;
   height: 100%;
   margin: 0;
+  padding: 0;
+
   overflow: hidden;
 
   background: #050505;
@@ -116,7 +118,7 @@ body {
 
 
 /* ============================================================
-   MAIN PRICE LOCKUP
+   COUNTER AREA
    ============================================================ */
 
 .counter-wrap {
@@ -127,7 +129,8 @@ body {
 
   z-index: 5;
 
-  width: 98vw;
+  width: 100vw;
+  max-width: 100vw;
 
   transform:
     translate(-50%, -50%);
@@ -140,15 +143,14 @@ body {
   pointer-events: none;
 
   user-select: none;
+
+  overflow: visible;
 }
 
 
-/*
-  Everything inside this row is treated as ONE giant
-  price statement:
-
-  ₹34,999/- per sq. yrd.
-*/
+/* ============================================================
+   COMPLETE PRICE LOCKUP
+   ============================================================ */
 
 .counter-line {
   display: flex;
@@ -156,6 +158,8 @@ body {
   align-items: baseline;
 
   justify-content: center;
+
+  max-width: 100vw;
 
   white-space: nowrap;
 
@@ -169,7 +173,7 @@ body {
 
 .currency {
   font-size:
-    clamp(68px, 15vw, 225px);
+    clamp(34px, 6vw, 90px);
 
   line-height: 0.85;
 
@@ -178,6 +182,8 @@ body {
   letter-spacing: -0.075em;
 
   margin-right: 0.08em;
+
+  flex-shrink: 0;
 }
 
 
@@ -192,6 +198,10 @@ body {
   padding: 0;
 
   color: #ffffff;
+
+  /*
+    The number remains the dominant element.
+  */
 
   font-size:
     clamp(68px, 15vw, 225px);
@@ -209,6 +219,8 @@ body {
 
   text-align: center;
 
+  flex-shrink: 1;
+
   transform-origin: center center;
 
   will-change: transform;
@@ -220,22 +232,24 @@ body {
 
 
 /* ============================================================
-   PRICE SUFFIX
+   PER SQ. YRD. TEXT
    ============================================================ */
 
 .price-suffix {
   font-size:
-    clamp(68px, 15vw, 225px);
+    clamp(18px, 2.2vw, 34px);
 
-  line-height: 0.85;
+  line-height: 1;
 
-  font-weight: 900;
+  font-weight: 700;
 
-  letter-spacing: -0.075em;
+  letter-spacing: -0.02em;
 
-  margin-left: 0.10em;
+  margin-left: 0.12em;
 
   white-space: nowrap;
+
+  flex-shrink: 0;
 }
 
 
@@ -258,26 +272,38 @@ body {
 
   .counter-wrap {
     width: 100vw;
+    max-width: 100vw;
   }
 
+
   .counter-line {
-    white-space: nowrap;
+    max-width: 100vw;
   }
+
 
   .currency {
     font-size:
-      clamp(42px, 15vw, 100px);
+      clamp(28px, 7vw, 55px);
   }
+
 
   .counter {
     font-size:
-      clamp(42px, 15vw, 100px);
+      clamp(48px, 15vw, 105px);
+
+    letter-spacing:
+      -0.07em;
   }
+
 
   .price-suffix {
     font-size:
-      clamp(42px, 15vw, 100px);
+      clamp(14px, 3.5vw, 25px);
+
+    margin-left:
+      0.1em;
   }
+
 
   .spiral {
     transform:
