@@ -2,10 +2,23 @@ const counter = document.getElementById("counter");
 const spiral = document.getElementById("spiral");
 const app = document.getElementById("app");
 
-const CHECKPOINTS = [34999, 32999, 30999, 29999, 27999];
+
+// ============================================================
+// FIXED CHECKPOINTS
+// ============================================================
+
+const CHECKPOINTS = [
+  34999,
+  32999,
+  30999,
+  29999,
+  27999
+];
+
 
 let checkpointIndex = 0;
 let currentValue = CHECKPOINTS[0];
+
 let isAnimating = false;
 let finished = false;
 
@@ -22,49 +35,65 @@ function buildSpiral() {
   const minRadius = 8;
   const maxRadius = 68;
 
+
   for (let i = 0; i < count; i++) {
 
-    const t = i / (count - 1);
+    const progress =
+      i / (count - 1);
 
     const angle =
-      t *
+      progress *
       Math.PI *
       2 *
       turns;
 
     const radius =
       minRadius +
-      (maxRadius - minRadius) * t;
+      (maxRadius - minRadius) *
+      progress;
+
 
     const number =
       CHECKPOINTS[0] -
       i * 137;
 
-    const el =
+
+    const element =
       document.createElement("span");
 
-    el.className =
+
+    element.className =
       "spiral-number";
 
-    el.textContent =
-      String(Math.max(10000, number));
 
-    el.style.setProperty(
+    element.textContent =
+      String(
+        Math.max(
+          10000,
+          number
+        )
+      );
+
+
+    element.style.setProperty(
       "--radius",
       `${radius}vw`
     );
 
-    el.style.setProperty(
+
+    element.style.setProperty(
       "--rotation",
       `${angle * 180 / Math.PI}deg`
     );
 
-    el.style.setProperty(
+
+    element.style.setProperty(
       "--opacity",
-      `${0.08 + (1 - t) * 0.28}`
+      `${0.08 + (1 - progress) * 0.28}`
     );
 
-    spiral.appendChild(el);
+
+    spiral.appendChild(element);
   }
 }
 
@@ -82,65 +111,76 @@ function render(value) {
 
 
 // ============================================================
-// SMOOTH FULL-NUMBER ROLL
+// FULL NUMBER ROLL
 // ============================================================
 
 function rollTo(target) {
 
-  if (isAnimating || finished) {
+  if (
+    isAnimating ||
+    finished
+  ) {
     return;
   }
 
+
   isAnimating = true;
 
-  const start = currentValue;
-  const difference = start - target;
+
+  const start =
+    currentValue;
+
+
+  const difference =
+    start - target;
+
 
   /*
-    SLOWER, MORE CINEMATIC ROLL
+    SLOW CINEMATIC ANIMATION
 
-    The old animation was quite quick.
-    This gives each transition roughly 4 seconds,
-    while still adapting slightly to the distance.
+    Minimum: 3.6 seconds
+    Maximum: 4.8 seconds
   */
 
   const duration =
     Math.min(
-      4500,
+      4800,
       Math.max(
-        3000,
-        difference * 1.5
+        3600,
+        difference * 1.8
       )
     );
 
-  const startTime = performance.now();
+
+  const startTime =
+    performance.now();
 
 
-  /*
-    Stronger easing creates a sense of momentum:
-    
-    - starts slowly
-    - accelerates
-    - rolls through the numbers
-    - gradually settles
-  */
+  // ----------------------------------------------------------
+  // EASING
+  // ----------------------------------------------------------
 
-  function easeInOutCubic(t) {
+  function easeInOutQuint(t) {
 
     return t < 0.5
-      ? 4 * t * t * t
+      ? 16 * Math.pow(t, 5)
       : 1 -
         Math.pow(
           -2 * t + 2,
-          3
+          5
         ) / 2;
   }
 
+
+  // ----------------------------------------------------------
+  // ANIMATION
+  // ----------------------------------------------------------
 
   function animate(now) {
 
     const elapsed =
       now - startTime;
+
 
     const progress =
       Math.min(
@@ -148,12 +188,13 @@ function rollTo(target) {
         1
       );
 
+
     const eased =
-      easeInOutCubic(progress);
+      easeInOutQuint(progress);
 
 
     /*
-      Calculate the current number.
+      Calculate the rolling number.
     */
 
     const value =
@@ -166,34 +207,49 @@ function rollTo(target) {
     render(value);
 
 
+    // --------------------------------------------------------
+    // ROTATION EFFECT
+    // --------------------------------------------------------
+
     /*
-      ROTATION EFFECT
+      The rotation starts at zero,
+      becomes strongest around the middle,
+      then settles back to zero.
 
-      The entire number subtly rotates and moves vertically
-      while the counter is rolling.
-
-      The rotation peaks around the middle of the animation
-      and naturally returns to zero at the end.
+      This makes the number feel like it has physical
+      momentum rather than simply changing text.
     */
 
     const rotation =
       Math.sin(
         progress * Math.PI
-      ) * 3.5;
+      ) * 4;
 
+
+    // --------------------------------------------------------
+    // VERTICAL MOVEMENT
+    // --------------------------------------------------------
 
     const verticalMovement =
       Math.sin(
         progress * Math.PI
-      ) * -12;
+      ) * -16;
 
+
+    // --------------------------------------------------------
+    // SCALE
+    // --------------------------------------------------------
 
     const scale =
       1 +
       Math.sin(
         progress * Math.PI
-      ) * 0.035;
+      ) * 0.045;
 
+
+    // --------------------------------------------------------
+    // APPLY MOTION
+    // --------------------------------------------------------
 
     counter.style.transform =
       `
@@ -203,20 +259,29 @@ function rollTo(target) {
       `;
 
 
-    if (progress < 1) {
+    // --------------------------------------------------------
+    // CONTINUE
+    // --------------------------------------------------------
+
+    if (
+      progress < 1
+    ) {
 
       requestAnimationFrame(
         animate
       );
 
-    } else {
+    }
+
+    else {
 
       /*
-        Always finish on the EXACT checkpoint.
+        ALWAYS LAND ON THE EXACT CHECKPOINT.
       */
 
       currentValue =
         target;
+
 
       render(
         target
@@ -224,7 +289,7 @@ function rollTo(target) {
 
 
       /*
-        Return the number to its normal position.
+        Return the number to its neutral position.
       */
 
       counter.style.transform =
@@ -235,9 +300,9 @@ function rollTo(target) {
         false;
 
 
-      /*
-        Freeze permanently at 27999.
-      */
+      // ------------------------------------------------------
+      // FINAL STATE
+      // ------------------------------------------------------
 
       if (
         checkpointIndex ===
@@ -247,134 +312,6 @@ function rollTo(target) {
         finished =
           true;
 
-        app.classList.add(
-          "complete"
-        );
-      }
-    }
-  }
-
-
-  requestAnimationFrame(
-    animate
-  );
-}
-  if (isAnimating || finished) {
-    return;
-  }
-
-  isAnimating = true;
-
-  const start =
-    currentValue;
-
-  const difference =
-    start - target;
-
-  /*
-    The entire five-digit number rolls continuously.
-
-    The user only clicks once, but visually the number
-    passes through every intermediate value.
-
-    It will ONLY settle at the predefined checkpoint.
-  */
-
-  const duration =
-    Math.min(
-      2600,
-      Math.max(
-        1400,
-        difference * 0.6
-      )
-    );
-
-  const startTime =
-    performance.now();
-
-
-  function easeInOut(t) {
-
-    return t < 0.5
-      ? 2 * t * t
-      : 1 -
-        Math.pow(
-          -2 * t + 2,
-          2
-        ) / 2;
-
-  }
-
-
-  function animate(now) {
-
-    const elapsed =
-      now - startTime;
-
-    const progress =
-      Math.min(
-        elapsed / duration,
-        1
-      );
-
-    const eased =
-      easeInOut(progress);
-
-
-    /*
-      Continuously change the ENTIRE number.
-
-      This is the part that gave us the original
-      full-number mechanical/rolling effect.
-    */
-
-    const value =
-      Math.round(
-        start -
-        difference * eased
-      );
-
-
-    render(value);
-
-
-    if (progress < 1) {
-
-      requestAnimationFrame(
-        animate
-      );
-
-    } else {
-
-      /*
-        Always force the exact checkpoint.
-
-        No rounding error can leave us on another
-        final number.
-      */
-
-      currentValue =
-        target;
-
-      render(
-        target
-      );
-
-      isAnimating =
-        false;
-
-
-      /*
-        Final checkpoint.
-      */
-
-      if (
-        checkpointIndex ===
-        CHECKPOINTS.length - 1
-      ) {
-
-        finished =
-          true;
 
         app.classList.add(
           "complete"
@@ -383,7 +320,6 @@ function rollTo(target) {
       }
 
     }
-
   }
 
 
@@ -400,6 +336,11 @@ function rollTo(target) {
 document.addEventListener(
   "click",
   () => {
+
+    /*
+      Don't allow another click while the number
+      is still rolling.
+    */
 
     if (
       isAnimating ||
@@ -431,6 +372,7 @@ document.addEventListener(
 // ============================================================
 
 buildSpiral();
+
 
 render(
   currentValue
