@@ -250,3 +250,8 @@ body {
   }
 
 }
+
+.counter {
+  transform-origin: center center;
+  will-change: transform;
+}
