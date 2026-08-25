@@ -1,6 +1,11 @@
-const counter = document.getElementById("counter");
-const spiral = document.getElementById("spiral");
-const app = document.getElementById("app");
+const counter =
+  document.getElementById("counter");
+
+const spiral =
+  document.getElementById("spiral");
+
+const app =
+  document.getElementById("app");
 
 
 // ============================================================
@@ -17,9 +22,12 @@ const CHECKPOINTS = [
 
 
 let checkpointIndex = 0;
-let currentValue = CHECKPOINTS[0];
+
+let currentValue =
+  CHECKPOINTS[0];
 
 let isAnimating = false;
+
 let finished = false;
 
 
@@ -30,22 +38,30 @@ let finished = false;
 function buildSpiral() {
 
   const count = 150;
+
   const turns = 7.5;
 
   const minRadius = 8;
+
   const maxRadius = 68;
 
 
-  for (let i = 0; i < count; i++) {
+  for (
+    let i = 0;
+    i < count;
+    i++
+  ) {
 
     const progress =
       i / (count - 1);
+
 
     const angle =
       progress *
       Math.PI *
       2 *
       turns;
+
 
     const radius =
       minRadius +
@@ -93,7 +109,9 @@ function buildSpiral() {
     );
 
 
-    spiral.appendChild(element);
+    spiral.appendChild(
+      element
+    );
   }
 }
 
@@ -105,13 +123,15 @@ function buildSpiral() {
 function render(value) {
 
   counter.textContent =
-    String(value).padStart(5, "0");
-
+    String(value).padStart(
+      5,
+      "0"
+    );
 }
 
 
 // ============================================================
-// FULL NUMBER ROLL
+// ROLLING ANIMATION
 // ============================================================
 
 function rollTo(target) {
@@ -136,20 +156,13 @@ function rollTo(target) {
 
 
   /*
-    SLOW CINEMATIC ANIMATION
+    Slower cinematic duration.
 
-    Minimum: 3.6 seconds
-    Maximum: 4.8 seconds
+    Every checkpoint gets enough time
+    to feel like a deliberate reveal.
   */
 
-  const duration =
-    Math.min(
-      4800,
-      Math.max(
-        3600,
-        difference * 1.8
-      )
-    );
+  const duration = 4000;
 
 
   const startTime =
@@ -160,20 +173,22 @@ function rollTo(target) {
   // EASING
   // ----------------------------------------------------------
 
-  function easeInOutQuint(t) {
+  function easeInOut(t) {
 
     return t < 0.5
-      ? 16 * Math.pow(t, 5)
+
+      ? 2 * t * t
+
       : 1 -
         Math.pow(
           -2 * t + 2,
-          5
+          2
         ) / 2;
   }
 
 
   // ----------------------------------------------------------
-  // ANIMATION
+  // FRAME
   // ----------------------------------------------------------
 
   function animate(now) {
@@ -190,11 +205,11 @@ function rollTo(target) {
 
 
     const eased =
-      easeInOutQuint(progress);
+      easeInOut(progress);
 
 
     /*
-      Calculate the rolling number.
+      Roll through EVERY intermediate number.
     */
 
     const value =
@@ -208,32 +223,31 @@ function rollTo(target) {
 
 
     // --------------------------------------------------------
-    // ROTATION EFFECT
+    // ROTATION
     // --------------------------------------------------------
 
     /*
-      The rotation starts at zero,
-      becomes strongest around the middle,
-      then settles back to zero.
+      Gentle rocking motion.
 
-      This makes the number feel like it has physical
-      momentum rather than simply changing text.
+      Strongest around the middle,
+      perfectly straight at the beginning
+      and end.
     */
 
     const rotation =
       Math.sin(
         progress * Math.PI
-      ) * 4;
+      ) * 3.5;
 
 
     // --------------------------------------------------------
     // VERTICAL MOVEMENT
     // --------------------------------------------------------
 
-    const verticalMovement =
+    const lift =
       Math.sin(
         progress * Math.PI
-      ) * -16;
+      ) * -10;
 
 
     // --------------------------------------------------------
@@ -244,16 +258,16 @@ function rollTo(target) {
       1 +
       Math.sin(
         progress * Math.PI
-      ) * 0.045;
+      ) * 0.025;
 
 
     // --------------------------------------------------------
-    // APPLY MOTION
+    // APPLY
     // --------------------------------------------------------
 
     counter.style.transform =
       `
-        translateY(${verticalMovement}px)
+        translateY(${lift}px)
         rotate(${rotation}deg)
         scale(${scale})
       `;
@@ -271,55 +285,53 @@ function rollTo(target) {
         animate
       );
 
+      return;
     }
 
-    else {
 
-      /*
-        ALWAYS LAND ON THE EXACT CHECKPOINT.
-      */
+    // --------------------------------------------------------
+    // FINISH
+    // --------------------------------------------------------
 
-      currentValue =
-        target;
+    currentValue =
+      target;
 
 
-      render(
-        target
+    render(
+      target
+    );
+
+
+    /*
+      Return perfectly to neutral.
+    */
+
+    counter.style.transform =
+      "translateY(0) rotate(0deg) scale(1)";
+
+
+    isAnimating =
+      false;
+
+
+    // --------------------------------------------------------
+    // FREEZE AT 27999
+    // --------------------------------------------------------
+
+    if (
+      checkpointIndex ===
+      CHECKPOINTS.length - 1
+    ) {
+
+      finished =
+        true;
+
+
+      app.classList.add(
+        "complete"
       );
-
-
-      /*
-        Return the number to its neutral position.
-      */
-
-      counter.style.transform =
-        "translateY(0) rotate(0deg) scale(1)";
-
-
-      isAnimating =
-        false;
-
-
-      // ------------------------------------------------------
-      // FINAL STATE
-      // ------------------------------------------------------
-
-      if (
-        checkpointIndex ===
-        CHECKPOINTS.length - 1
-      ) {
-
-        finished =
-          true;
-
-
-        app.classList.add(
-          "complete"
-        );
-
-      }
-
     }
+
   }
 
 
@@ -336,11 +348,6 @@ function rollTo(target) {
 document.addEventListener(
   "click",
   () => {
-
-    /*
-      Don't allow another click while the number
-      is still rolling.
-    */
 
     if (
       isAnimating ||
